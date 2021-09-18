@@ -2,12 +2,6 @@ namespace SpriteKind {
     export const Ring = SpriteKind.create()
 }
 sprites.onCreated(SpriteKind.Enemy, function (sprite) {
-    animation.loopFrames2(
-    sprite,
-    assets.animation`assassin left`,
-    125,
-    characterAnimations.rule(Predicate.MovingLeft)
-    )
     sprite.follow(mySprite, 30)
     sprite.ay = 500
     animation.loopFrames2(
@@ -15,6 +9,12 @@ sprites.onCreated(SpriteKind.Enemy, function (sprite) {
     assets.animation`assassin right`,
     125,
     characterAnimations.rule(Predicate.MovingRight)
+    )
+    animation.loopFrames2(
+    sprite,
+    assets.animation`assassin left`,
+    125,
+    characterAnimations.rule(Predicate.MovingLeft)
     )
 })
 controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
@@ -24,7 +24,7 @@ scene.onOverlapTile(SpriteKind.Player, assets.tile`pit`, function (sprite, locat
     game.over(false)
 })
 controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
-    projectile = sprites.createProjectileFromSprite(assets.image`power kick`, mySprite, 50, 50)
+    projectile = sprites.createProjectileFromSprite(assets.image`power kick`, mySprite, 0, 50)
     projectile.setFlag(SpriteFlag.GhostThroughWalls, true)
     projectile.lifespan = 100
     animation.runImageAnimation(
@@ -36,8 +36,14 @@ controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
     music.knock.play()
 })
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    tiles.setWallAt(tiles.locationInDirection(tiles.locationOfSprite(mySprite), CollisionDirection.Bottom), true)
-    tiles.setTileAt(tiles.locationInDirection(tiles.locationOfSprite(mySprite), CollisionDirection.Bottom), assets.tile`energy`)
+    if (tiles.tileIs(tiles.locationInDirection(tiles.locationOfSprite(mySprite), CollisionDirection.Bottom), assets.tile`transparency16`)) {
+        tiles.setWallAt(tiles.locationInDirection(tiles.locationOfSprite(mySprite), CollisionDirection.Bottom), true)
+        tiles.setTileAt(tiles.locationInDirection(tiles.locationOfSprite(mySprite), CollisionDirection.Bottom), assets.tile`energy`)
+    }
+})
+scene.onOverlapTile(SpriteKind.Projectile, assets.tile`energy`, function (sprite, location) {
+    tiles.setWallAt(location, false)
+    tiles.setTileAt(location, assets.tile`transparency16`)
 })
 scene.onHitWall(SpriteKind.Enemy, function (sprite, location) {
     sprites.wall_jump(sprite)
@@ -50,13 +56,17 @@ scene.onOverlapTile(SpriteKind.Player, assets.tile`ring`, function (sprite, loca
     info.changeScoreBy(1)
     music.baDing.play()
 })
+controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
+    projectile = sprites.createProjectileFromSprite(assets.image`power kick`, mySprite, 0, 0)
+})
 scene.onOverlapTile(SpriteKind.Projectile, assets.tile`boulder`, function (sprite, location) {
     tiles.setWallAt(location, false)
     tiles.setTileAt(location, assets.tile`transparency16`)
 })
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Enemy, function (sprite, otherSprite) {
-    otherSprite.destroy()
+    tiles.placeOnRandomTile(otherSprite, assets.tile`rubble`)
     sprite.destroy()
+    music.smallCrash.play()
 })
 scene.onOverlapTile(SpriteKind.Player, assets.tile`door1`, function (sprite, location) {
     scene.setBackgroundImage(assets.image`background2`)
